@@ -1,0 +1,123 @@
+# models.py
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, Time, Text, DECIMAL
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+
+Base = declarative_base()
+
+class Cliente(Base):
+    __tablename__ = 'cliente'
+    id_cliente = Column(Integer, primary_key=True)
+    nome = Column(String(50))
+    cognome = Column(String(50))
+    telefono = Column(String(15))
+    email = Column(String(100))
+    indirizzo = Column(String(100))
+    veicoli = relationship("Veicolo", back_populates="cliente")
+
+class Veicolo(Base):
+    __tablename__ = 'veicolo'
+    id_veicolo = Column(Integer, primary_key=True)
+    targa = Column(String(20))
+    marca = Column(String(50))
+    modello = Column(String(50))
+    anno = Column(Integer)
+    alimentazione = Column(String(20))
+    id_cliente = Column(Integer, ForeignKey('cliente.id_cliente'))
+    cliente = relationship("Cliente", back_populates="veicoli")
+    appuntamenti = relationship("Appuntamento", back_populates="veicolo")
+
+class Appuntamento(Base):
+    __tablename__ = 'appuntamento'
+    id_appuntamento = Column(Integer, primary_key=True)
+    data = Column(Date)
+    ora = Column(Time)
+    id_veicolo = Column(Integer, ForeignKey('veicolo.id_veicolo'))
+    veicolo = relationship("Veicolo", back_populates="appuntamenti")
+    interventi = relationship("Intervento", back_populates="appuntamento")
+
+class Intervento(Base):
+    __tablename__ = 'intervento'
+    id_intervento = Column(Integer, primary_key=True)
+    data_inizio = Column(Date)
+    data_fine = Column(Date)
+    descrizione = Column(Text)
+    id_appuntamento = Column(Integer, ForeignKey('appuntamento.id_appuntamento'))
+    id_veicolo = Column(Integer, ForeignKey('veicolo.id_veicolo'))
+    appuntamento = relationship("Appuntamento", back_populates="interventi")
+    operazioni = relationship("Operazione", back_populates="intervento")
+    pagamento = relationship("Pagamento", uselist=False, back_populates="intervento")
+    fattura = relationship("Fattura", uselist=False, back_populates="intervento")
+    garanzia = relationship("Garanzia", uselist=False, back_populates="intervento")
+
+class Meccanico(Base):
+    __tablename__ = 'meccanico'
+    id_meccanico = Column(Integer, primary_key=True)
+    nome = Column(String(50))
+    cognome = Column(String(50))
+    matricola = Column(String(20))
+    telefono = Column(String(15))
+    operazioni = relationship("Operazione", back_populates="meccanico")
+
+class Operazione(Base):
+    __tablename__ = 'operazione'
+    id_operazione = Column(Integer, primary_key=True)
+    descrizione = Column(Text)
+    durata = Column(Integer)
+    id_intervento = Column(Integer, ForeignKey('intervento.id_intervento'))
+    id_meccanico = Column(Integer, ForeignKey('meccanico.id_meccanico'))
+    intervento = relationship("Intervento", back_populates="operazioni")
+    meccanico = relationship("Meccanico", back_populates="operazioni")
+    ricambi = relationship("OperazioneRicambio", back_populates="operazione")
+
+class Fornitore(Base):
+    __tablename__ = 'fornitore'
+    id_fornitore = Column(Integer, primary_key=True)
+    nome = Column(String(100))
+    telefono = Column(String(15))
+    email = Column(String(100))
+    ricambi = relationship("Ricambio", back_populates="fornitore")
+
+class Ricambio(Base):
+    __tablename__ = 'ricambio'
+    id_ricambio = Column(Integer, primary_key=True)
+    nome = Column(String(100))
+    descrizione = Column(Text)
+    costo = Column(DECIMAL(10, 2))
+    quantita = Column(Integer)
+    id_fornitore = Column(Integer, ForeignKey('fornitore.id_fornitore'))
+    fornitore = relationship("Fornitore", back_populates="ricambi")
+    operazioni = relationship("OperazioneRicambio", back_populates="ricambio")
+
+class OperazioneRicambio(Base):
+    __tablename__ = 'operazione_ricambio'
+    id_operazione = Column(Integer, ForeignKey('operazione.id_operazione'), primary_key=True)
+    id_ricambio = Column(Integer, ForeignKey('ricambio.id_ricambio'), primary_key=True)
+    operazione = relationship("Operazione", back_populates="ricambi")
+    ricambio = relationship("Ricambio", back_populates="operazioni")
+
+class Pagamento(Base):
+    __tablename__ = 'pagamento'
+    id_pagamento = Column(Integer, primary_key=True)
+    id_intervento = Column(Integer, ForeignKey('intervento.id_intervento'))
+    importo = Column(DECIMAL(10, 2))
+    metodo = Column(String(20))
+    data = Column(Date)
+    intervento = relationship("Intervento", back_populates="pagamento")
+
+class Fattura(Base):
+    __tablename__ = 'fattura'
+    id_fattura = Column(Integer, primary_key=True)
+    id_intervento = Column(Integer, ForeignKey('intervento.id_intervento'))
+    data_emissione = Column(Date)
+    totale = Column(DECIMAL(10, 2))
+    intervento = relationship("Intervento", back_populates="fattura")
+
+class Garanzia(Base):
+    __tablename__ = 'garanzia'
+    id_garanzia = Column(Integer, primary_key=True)
+    id_intervento = Column(Integer, ForeignKey('intervento.id_intervento'))
+    data_inizio = Column(Date)
+    data_fine = Column(Date)
+    note = Column(Text)
+    intervento = relationship("Intervento", back_populates="garanzia")
